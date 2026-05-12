@@ -1,8 +1,8 @@
 import io
 import math
 import zipfile
-import tempfile
 import os
+import re
 
 from flask import Flask, render_template, request, send_file, jsonify
 from PyPDF2 import PdfReader, PdfWriter
@@ -35,7 +35,11 @@ def split_pdf():
 
     raw_names = request.form.get("names", "")
 
-    output_names = [n.strip() for n in raw_names.splitlines() if n.strip()]
+    output_names = [
+        re.sub(r'[<>:"/\\\\|?*]', '_', n.strip())[:100]
+        for n in raw_names.splitlines()
+        if n.strip()
+    ]
     if not output_names:
         return jsonify({"detail": "No output file names provided."}), 400
 
