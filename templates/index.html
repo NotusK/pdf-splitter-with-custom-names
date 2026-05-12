@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Splitter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <!-- ── Hero header ── -->
+  <header class="hero">
+    <div class="hero-badge">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" fill="#f59e0b"/></svg>
+      Pisah File PDF Dengan Cepat Untuk Diseminasi
+    </div>
+    <h1>Split PDF Files <span>dengan Nama Custom</span></h1>
+    <p>Upload your PDF, set how many pages per file, enter names for each split, and get your files instantly.</p>
+  </header>
+
+  <!-- ── Page body ── -->
+  <main class="container">
+
+    <!-- Section 1: Split Settings -->
+    <section class="section">
+      <div class="section-header">
+        <h2>Split Settings</h2>
+        <p>How many pages should each split PDF contain?</p>
+      </div>
+      <div class="card">
+        <div class="card-label">Pages per split file</div>
+        <div class="stepper-row">
+          <button class="stepper-btn" id="decrementBtn" aria-label="Decrease">&#8722;</button>
+          <input type="number" id="pagesPerSplit" min="1" value="2" autocomplete="off" />
+          <button class="stepper-btn" id="incrementBtn" aria-label="Increase">&#43;</button>
+        </div>
+        <p class="hint" id="splitHint">Example: if you set 2 pages per split, a 10-page PDF will be divided into 5 files.</p>
+      </div>
+    </section>
+
+    <!-- Section 2: File Names -->
+    <section class="section">
+      <div class="section-header">
+        <h2>File Names</h2>
+        <p>Enter the names for each split file, one per line.</p>
+      </div>
+      <div class="card">
+        <div class="names-header">
+          <span class="card-label" style="margin-bottom:0">Names list</span>
+          <span class="count-badge" id="countBadge">0 names</span>
+        </div>
+        <textarea
+          id="namesInput"
+          placeholder="Name_1&#10;Name_2&#10;Name_3&#10;----"
+          spellcheck="false"
+        ></textarea>
+        <p class="hint">Each line will be used as the filename for one split PDF. If there are fewer names than splits, the remaining files will be auto-named.</p>
+      </div>
+    </section>
+
+    <!-- Section 3: Upload PDF -->
+    <section class="section">
+      <div class="section-header">
+        <h2>Upload PDF</h2>
+        <p>Drag and drop your PDF file here or click to browse.</p>
+      </div>
+      <div class="card drop-zone" id="dropZone">
+        <input type="file" id="pdfInput" accept="application/pdf" />
+        <div class="drop-body">
+          <div class="drop-icon">
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="3" width="18" height="24" rx="2" stroke="#3b82f6" stroke-width="1.8"/>
+              <path d="M20 3 L24 7" stroke="#3b82f6" stroke-width="1.8"/>
+              <rect x="20" y="3" width="4" height="4" rx="0.5" stroke="#3b82f6" stroke-width="1.8" fill="white"/>
+              <path d="M19 18 L19 30 M13 24 L19 18 L25 24" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p class="drop-title"><span class="drop-cta">Click to upload</span> or drag and drop</p>
+          <p class="drop-sub" id="dropSub">PDF files only (max 50MB)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Result Preview -->
+    <section class="section">
+      <div class="section-header">
+        <h2>Result Preview</h2>
+        <p>Preview how your PDF will be split before processing.</p>
+      </div>
+      <div class="card preview-card">
+        <div class="preview-empty" id="previewEmpty">
+          <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+            <circle cx="17" cy="17" r="14" stroke="#d1d5db" stroke-width="1.6"/>
+            <path d="M17 11 L17 18.5 M17 22 L17 23" stroke="#d1d5db" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+          <p>Upload a PDF and configure your settings to see a preview.</p>
+        </div>
+        <div class="preview-list" id="previewList"></div>
+      </div>
+    </section>
+
+    <!-- Submit bar -->
+    <div class="submit-bar">
+      <div class="validation-msg" id="validationMsg">Fill all fields to continue</div>
+      <button class="btn-submit" id="submitBtn" disabled>
+        Split &amp; Download
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <span>PDF Splitter &mdash; Split &amp; rename PDFs instantly</span>
+  </footer>
+
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Splitting your PDF&hellip;</div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
