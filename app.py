@@ -3,9 +3,9 @@ import math
 import zipfile
 import tempfile
 import os
+import fitz
 
 from flask import Flask, render_template, request, send_file, jsonify
-from pypdf import PdfReader, PdfWriter
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 100 MB max upload
@@ -46,11 +46,11 @@ def split_pdf():
 
     # ── Read PDF ─────────────────────────────────────────────────────
     try:
-        reader = PdfReader(pdf_file.stream)
+        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
     except Exception:
         return jsonify({"detail": "Could not read the uploaded PDF."}), 400
 
-    total_pages = len(reader.pages)
+    total_pages = len(doc)
     total_chunks = math.ceil(total_pages / pages_per_split)
 
     if len(output_names) != total_chunks:
@@ -73,23 +73,31 @@ def split_pdf():
 
     with zipfile.ZipFile(temp_zip.name, "w", zipfile.ZIP_STORED) as zf:
         for idx, (start, end) in enumerate(chunks):
-            writer = PdfWriter()
-            for page_num in range(start, min(start + pages_per_split, total_pages)):
-                pages = reader.pages
-                writer.add_page(pages[page_num])
+            end = min(start + pages_per_split, total_pages)
 
-            pdf_bytes = io.BytesIO()
-            writer.write(pdf_bytes)
+            new_pdf = fitz.open()
+
+            new_pdf.insert_pdf(
+                doc,
+                from_page=start,
+                to_page=end - 1
+            )
+
+            pdf_bytes = new_pdf.tobytes()
 
             zf.writestr(
                 f"{output_names[idx]}.pdf",
-                pdf_bytes.getvalue()
+                pdf_bytes
             )
+
+            new_pdf.close()
 
     temp_zip.seek(0)
 
     base_name = os.path.splitext(pdf_file.filename)[0]
     zip_name = f"split_{base_name}.zip"
+
+    doc.close()
 
     return send_file(
         temp_zip,
