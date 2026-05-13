@@ -64,27 +64,35 @@ def split_pdf():
         }), 400
 
     # ── Split & zip in memory ─────────────────────────────────────────
-    zip_buffer = io.BytesIO()
+    temp_zip = tempfile.NamedTemporaryFile(delete=False)
 
-    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        for idx, start in enumerate(range(0, total_pages, pages_per_split)):
+    chunks = [
+        (start, min(start + pages_per_split, total_pages))
+        for start in range(0, total_pages, pages_per_split)
+    ]
+
+    with zipfile.ZipFile(temp_zip.name, "w", zipfile.ZIP_STORED) as zf:
+        for idx, (start, end) in enumerate(chunks):
             writer = PdfWriter()
             for page_num in range(start, min(start + pages_per_split, total_pages)):
-                writer.add_page(reader.pages[page_num])
+                pages = reader.pages
+                writer.add_page(pages[page_num])
 
             pdf_bytes = io.BytesIO()
             writer.write(pdf_bytes)
-            pdf_bytes.seek(0)
 
-            zf.writestr(f"{output_names[idx]}.pdf", pdf_bytes.read())
+            zf.writestr(
+                f"{output_names[idx]}.pdf",
+                pdf_bytes.getvalue()
+            )
 
-    zip_buffer.seek(0)
+    temp_zip.seek(0)
 
     base_name = os.path.splitext(pdf_file.filename)[0]
     zip_name = f"split_{base_name}.zip"
 
     return send_file(
-        zip_buffer,
+        temp_zip,
         mimetype="application/zip",
         as_attachment=True,
         download_name=zip_name,
@@ -92,4 +100,4 @@ def split_pdf():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
