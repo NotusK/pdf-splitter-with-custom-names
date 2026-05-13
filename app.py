@@ -1,14 +1,14 @@
 import io
 import math
 import zipfile
+import tempfile
 import os
-import re
 
 from flask import Flask, render_template, request, send_file, jsonify
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB max upload
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 100 MB max upload
 
 
 @app.route("/")
@@ -35,11 +35,7 @@ def split_pdf():
 
     raw_names = request.form.get("names", "")
 
-    output_names = [
-        re.sub(r'[<>:"/\\\\|?*]', '_', n.strip())[:100]
-        for n in raw_names.splitlines()
-        if n.strip()
-    ]
+    output_names = [n.strip() for n in raw_names.splitlines() if n.strip()]
     if not output_names:
         return jsonify({"detail": "No output file names provided."}), 400
 
