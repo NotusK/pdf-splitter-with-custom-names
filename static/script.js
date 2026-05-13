@@ -79,12 +79,12 @@ dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
   const f = e.dataTransfer.files[0];
-  f && f.type === 'application/pdf' ? handleFile(f) : showToast('Please drop a valid PDF file', 'error');
+  f && f.type === 'application/pdf' ? handleFile(f) : showToast('Please drop a valid PDF file', 'error', true);
 });
 
 function handleFile(f) {
   if (!f) return;
-  if (f.type !== 'application/pdf') { showToast('Only PDF files are accepted', 'error'); return; }
+  if (f.type !== 'application/pdf') { showToast('Only PDF files are accepted', 'error', true); return; }
 
   selectedFile = f;
   dropZone.classList.add('has-file');
@@ -220,7 +220,7 @@ submitBtn.addEventListener('click', async () => {
     showToast(`✓ ${names.length} PDF${names.length > 1 ? 's' : ''} created and downloaded!`, 'success');
 
   } catch (err) {
-    showToast(`Error: ${err.message}`, 'error');
+    showToast(`Error: ${err.message}`, 'error', true);
   } finally {
     loadingOverlay.classList.remove('show');
     submitBtn.disabled = false;
@@ -231,11 +231,25 @@ submitBtn.addEventListener('click', async () => {
    Toast
 ─────────────────────────────────────────── */
 let toastTimer;
-function showToast(msg, type = 'success') {
-  toast.textContent = msg;
-  toast.className = `toast ${type} show`;
+
+function hideToast() {
+  toast.classList.remove('show');
+}
+
+function showToast(msg, type = 'success', persistent = false) {
+
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 4500);
+
+  toast.innerHTML = `
+    <span>${msg}</span>
+    <button class="toast-close" onclick="hideToast()">×</button>
+  `;
+
+  toast.className = `toast ${type} show`;
+
+  if (!persistent) {
+    toastTimer = setTimeout(() => hideToast(), 4500);
+  }
 }
 
 /* ── Init ── */
