@@ -205,7 +205,9 @@ submitBtn.addEventListener('click', async () => {
 
     const fetchPromise = fetch('/split', { method: 'POST', body: formData });
 
-    loadingText.innerText = "Splitting your PDF...";
+    setTimeout(() => {
+      loadingText.innerText = "Splitting your PDF...";
+    }, 15000);
 
     const res = await fetchPromise;
 
