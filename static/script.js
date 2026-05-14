@@ -14,6 +14,7 @@ const loadingOverlay = document.getElementById('loadingOverlay');
 const toast          = document.getElementById('toast');
 const previewEmpty   = document.getElementById('previewEmpty');
 const previewList    = document.getElementById('previewList');
+const loadingText = document.getElementById('loadingText');
 
 /* ── State ── */
 let selectedFile = null;
@@ -200,12 +201,20 @@ submitBtn.addEventListener('click', async () => {
   submitBtn.disabled = true;
 
   try {
-    const res = await fetch('/split', { method: 'POST', body: formData });
+    loadingText.innerText = "Uploading your PDF...";
+
+    const fetchPromise = fetch('/split', { method: 'POST', body: formData });
+
+    loadingText.innerText = "Splitting your PDF...";
+
+    const res = await fetchPromise;
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Unknown server error' }));
       throw new Error(err.detail || `Server error ${res.status}`);
     }
+
+    loadingText.innerText = "Preparing download...";
 
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
