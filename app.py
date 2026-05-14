@@ -4,6 +4,7 @@ import zipfile
 import tempfile
 import os
 import fitz
+import time
 
 from flask import Flask, render_template, request, send_file, jsonify
 
@@ -15,9 +16,10 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 100 MB max upload
 def index():
     return render_template("index.html")
 
-
 @app.route("/split", methods=["POST"])
 def split_pdf():
+    
+    start_time = time.perf_counter()
     # ── Validate inputs ──────────────────────────────────────────────
     if "pdf" not in request.files:
         return jsonify({"detail": "Harap upload file berjenis PDF."}), 400
@@ -46,7 +48,10 @@ def split_pdf():
 
     # ── Read PDF ─────────────────────────────────────────────────────
     try:
-        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
+        temp_input = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+        pdf_file.save(temp_input.name)
+
+        doc = fitz.open(temp_input.name)
     except Exception:
         return jsonify({"detail": "Could not read the uploaded PDF."}), 400
 
@@ -71,40 +76,54 @@ def split_pdf():
         for start in range(0, total_pages, pages_per_split)
     ]
 
-    with zipfile.ZipFile(temp_zip.name, "w", zipfile.ZIP_STORED) as zf:
-        for idx, (start, end) in enumerate(chunks):
-            end = min(start + pages_per_split, total_pages)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with zipfile.ZipFile(temp_zip.name, "w", zipfile.ZIP_STORED) as zf:
+            for idx, (start, end) in enumerate(chunks):
+                end = min(start + pages_per_split, total_pages)
 
-            new_pdf = fitz.open()
+                new_pdf = fitz.open()
 
-            new_pdf.insert_pdf(
-                doc,
-                from_page=start,
-                to_page=end - 1
-            )
+                new_pdf.insert_pdf(
+                    doc,
+                    from_page=start,
+                    to_page=end - 1
+                )
 
-            pdf_bytes = new_pdf.tobytes()
+                temp_pdf_path = os.path.join(
+                    temp_dir,
+                    f"{idx}.pdf"
+                )
 
-            zf.writestr(
-                f"{output_names[idx]}.pdf",
-                pdf_bytes
-            )
+                new_pdf.save(
+                    temp_pdf_path,
+                    garbage=3,
+                    deflate=False
+                )
+                new_pdf.close()
 
-            new_pdf.close()
+                zf.write(
+                    temp_pdf_path,
+                    arcname=f"{output_names[idx]}.pdf"
+                )
 
-    temp_zip.seek(0)
+                os.remove(temp_pdf_path)
 
-    base_name = os.path.splitext(pdf_file.filename)[0]
-    zip_name = f"split_{base_name}.zip"
+        temp_zip.seek(0)
 
-    doc.close()
+        base_name = os.path.splitext(pdf_file.filename)[0]
+        zip_name = f"split_{base_name}.zip"
 
-    return send_file(
-        temp_zip,
-        mimetype="application/zip",
-        as_attachment=True,
-        download_name=zip_name,
-    )
+        doc.close()
+
+        end_time = time.perf_counter()
+        print(f"Execution time: {end_time - start_time:.4f} seconds")  
+
+        return send_file(
+            temp_zip,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name=zip_name,
+        )  
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
